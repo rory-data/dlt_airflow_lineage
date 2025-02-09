@@ -1,0 +1,4 @@
+# Astro Runtime includes the following pre-installed providers packages: https://www.astronomer.io/docs/astro/runtime-image-architecture#provider-packages
+apache-airflow-providers-openlineage>=1.10.0
+dlt[sql_database,filesystem,duckdb]>=1.6.0
+pymysql>=1.1.1

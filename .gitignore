@@ -1,0 +1,16 @@
+.astro
+.dlt
+.venv
+.git
+.env
+.airflowignore
+.dockerignore
+.DS_Store
+airflow_settings.yaml
+__pycache__/
+airflow-webserver.pid
+webserver_config.py
+airflow.cfg
+airflow.db
+*.duckdb
+uv.lock
