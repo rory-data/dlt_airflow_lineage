@@ -11,7 +11,9 @@ def load_rfam_tables():
     # Create a dlt pipeline object
     pipeline = dlt.pipeline(
         pipeline_name="rfam_to_duckdb",  # Custom name for the pipeline
-        destination="duckdb",  # dlt destination to which the data will be loaded
+        destination=dlt.destinations.duckdb(
+            "files/rfam.db"
+        ),  # dlt destination to which the data will be loaded
         dataset_name="rfam",  # Custom name for the dataset created in the destination
     )
 

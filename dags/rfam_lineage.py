@@ -1,8 +1,10 @@
+import os
+
 import dlt
 from airflow.decorators import dag
+from airflow.models import Variable
 from dlt.common import pendulum
 from dlt.helpers.airflow_helper import PipelineTasksGroup
-from dlt.sources.credentials import ConnectionStringCredentials
 from dlt.sources.sql_database import sql_database
 
 # Modify the DAG arguments
@@ -14,6 +16,9 @@ default_task_args = {
     "retries": 0,
 }
 
+# Define where DuckDB database file should be stored
+DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/tmp/rfam.duckdb")
+
 
 @dag(
     schedule="@daily",
@@ -22,11 +27,14 @@ default_task_args = {
     max_active_runs=1,
     default_args=default_task_args,
 )
-def load_data():
+def run_dlt_pipeline():
+    """DAG to run dlt pipeline and load data from RFam into DuckDB."""
+    db_uri = Variable.get("AIRFLOW_CONN_RFAM", default_var=None)
+
     # Set `use_data_folder` to True to store temporary data in the `data` bucket.
     # Use only when it does not fit on the local storage
     tasks = PipelineTasksGroup(
-        "pg_lineage",
+        "rfam_lineage",
         use_data_folder=False,
         wipe_local_data=True,
         use_task_logger=True,
@@ -34,21 +42,17 @@ def load_data():
         save_trace_info=True,
     )
 
-    # Import your source from the pipeline script
-    src_credentials = ConnectionStringCredentials(
-        "postgresql://postgres:postgres@host.docker.internal:5435/lineagetutorial"
-    )
+    # Create a dlt source that will load tables "family" and "genome"
     source = sql_database(
-        credentials=src_credentials,
+        credentials=db_uri,
         reflection_level="full_with_precision",
-        schema="public",
-    )
+    ).with_resources("family", "genome")
 
     # Modify the pipeline parameters
     pipeline = dlt.pipeline(
-        pipeline_name="pg_lineage",
-        dataset_name="dlt_data",
-        destination="dlt.destinations.filesystem(bucket_url='output')",
+        pipeline_name="rfam_lineage",
+        dataset_name="rfam_data",
+        destination=dlt.destinations.duckdb(DUCKDB_PATH),
         dev_mode=False,  # Must be false if we decompose
     )
     # Create the source, the "serialize" decompose option
@@ -61,8 +65,8 @@ def load_data():
         trigger_rule="all_done",
         retries=0,
         provide_context=True,
-        write_disposition="replace",
+        write_disposition="",
     )
 
 
-load_data()
+run_dlt_pipeline()
