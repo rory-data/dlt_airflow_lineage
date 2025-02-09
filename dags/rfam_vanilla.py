@@ -21,7 +21,7 @@ DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/tmp/rfam.duckdb")
 
 
 @dag(
-    dag_id="rfam_lineage",
+    dag_id="rfam_vanilla",
     description="DAG to run dlt pipeline and load data from RFam into DuckDB",
     schedule="@once",
     start_date=pendulum.DateTime(2025, 1, 1),
@@ -30,13 +30,12 @@ DUCKDB_PATH = os.getenv("DUCKDB_PATH", "/tmp/rfam.duckdb")
     default_args=default_task_args,
 )
 def run_dlt_pipeline():
-    """DAG to run dlt pipeline and load data from RFam into DuckDB."""
     db_uri = Variable.get("AIRFLOW_CONN_RFAM", default_var=None)
 
     # Set `use_data_folder` to True to store temporary data in the `data` bucket.
     # Use only when it does not fit on the local storage
     tasks = PipelineTasksGroup(
-        "rfam_lineage",
+        "rfam_vanilla_pipeline",
         use_data_folder=False,
         wipe_local_data=True,
         use_task_logger=True,
@@ -52,7 +51,7 @@ def run_dlt_pipeline():
 
     # Modify the pipeline parameters
     pipeline = dlt.pipeline(
-        pipeline_name="rfam_lineage",
+        pipeline_name="rfam_vanilla",
         dataset_name="rfam_data",
         destination=dlt.destinations.duckdb(DUCKDB_PATH),
         dev_mode=False,  # Must be false if we decompose
